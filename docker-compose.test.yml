@@ -1,0 +1,47 @@
+# docker-compose -f docker-compose.yml -f docker-compose.test.yml up
+
+version: '3.3'
+
+services:
+
+  frontend:
+    build: ./frontend
+    labels: 
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`app.localhost`) && (Path(`/`) || Path(`/index`))"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=5000"
+
+  gateway:
+    build: ./gateway
+    labels: 
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`app.localhost`) && PathPrefix(`/gateway/`)"
+      - "traefik.http.routers.gateway.entrypoints=web"
+      - "traefik.http.services.gateway.loadbalancer.server.port=8080"
+    environment: 
+      KAFKA_HOST: kafka
+
+  session:
+    build: ./session
+    environment: 
+      MONGO_DB_URI: mongodb://username:password@mongo:27017/admin
+      KAFKA_HOST: kafka
+      REDIS_HOST: redis
+
+  kafka:
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+
+  reverse-proxy:
+    image: traefik:v2.3.0-rc3
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--providers.docker.exposedbydefault=false"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"

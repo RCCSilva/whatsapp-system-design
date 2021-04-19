@@ -1,0 +1,29 @@
+version: '3.3'
+
+services:
+  redis:
+    image: redis:6.0.8
+    ports:
+      - 6379:6379
+
+  mongo:
+    image: mongo:4.4.0-bionic
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: username
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - 27017:27017
+
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+
+  kafka:
+    image: wurstmeister/kafka:2.12-2.5.0
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
